@@ -121,6 +121,11 @@ public class HardwareResearcher : IVisitor
         }
 
         Logger.Info("Control: " + nbControl + ", Fans: " + nbFan + ", Temps: " + nbTemp);
+
+        foreach (var h in hardwareList)
+        {
+            Logger.Debug(h.Type + ": " + h.Name);
+        }
         return hardwareList;
     }
 
