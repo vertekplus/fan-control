@@ -50,8 +50,15 @@ uninstall:
 
 ###################  Packaging
 
+build-nsis *args:
+    $env:CARGO_PACKAGER_FORMAT="nsis"; just build-release {{ args }}
+
 nsis:
     cargo packager --release --formats nsis --verbose
+
+install-nsis: build-nsis nsis
+      Start-Process (Get-ChildItem .\target\release\fan-control_*_x64-setup.exe | Sort-Object LastWriteTime -Descending | Select-Object -First 1).FullName
+
 
 ###################  Test
 

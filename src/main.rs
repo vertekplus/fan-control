@@ -32,7 +32,7 @@ pub enum Error {
 
 pub type Result<T> = std::result::Result<T, Error>;
 
-fn setup_logs(args: &Args) {
+fn setup_logs(args: &Args, dir_manager: &DirManager) {
     let mut builder = env_logger::builder();
 
     fn filter_workspace_crates(
@@ -57,7 +57,15 @@ fn setup_logs(args: &Args) {
         filter_workspace_crates(&mut builder, LevelFilter::Debug);
     };
 
-    if let Some(log_file_path) = &args.log_file {
+    let log_file = if let Some(log_file_path) = &args.log_file {
+        Some(log_file_path.clone())
+    } else if cfg!(target_os = "windows") {
+        Some(dir_manager.cache_dir_path.join("log.txt"))
+    } else {
+        None
+    };
+
+    if let Some(log_file_path) = &log_file {
         unsafe {
             env::set_var("FAN_CONTROL_LOG_FILE", log_file_path);
         }
@@ -76,7 +84,7 @@ fn setup_logs(args: &Args) {
         };
     }
 
-    if args.log_file.is_some() {
+    if log_file.is_some() {
         builder.format_timestamp_secs();
     } else {
         builder.format_timestamp(None);
@@ -86,13 +94,14 @@ fn setup_logs(args: &Args) {
 
 fn try_run() -> Result<()> {
     let args = Args::parse();
-    setup_logs(&args);
+
+    let dir_manager = DirManager::new(&args.config_dir_path, &args.config_name);
+
+    setup_logs(&args, &dir_manager);
 
     #[cfg(feature = "ui")]
     ui::localize::localize();
     data::localize::localize();
-
-    let dir_manager = DirManager::new(&args.config_dir_path, &args.config_name);
 
     let bridge = hardware::new()?;
     let hardware = bridge.hardware();
